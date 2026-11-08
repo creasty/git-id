@@ -87,3 +87,16 @@ jobs:
           echo "BATS_LIB_PATH=$(brew --prefix)/lib" >> "$GITHUB_ENV"
 
       - run: bats --timing --print-output-on-failure tests
+
+  # The install-script legs under one stable name, for a branch rule to require: see test-ok
+  install-script-ok:
+    if: always()
+    needs: install-script
+    runs-on: ubuntu-latest
+    steps:
+      # For a matrix, `result` is success only when every leg succeeded.
+      - env:
+          RESULT: ${{ needs.install-script.result }}
+        run: |
+          echo "install-script: $RESULT"
+          [ "$RESULT" = 'success' ]
