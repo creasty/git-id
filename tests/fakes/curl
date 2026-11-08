@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# A fake of curl as ../../install.sh calls it, for the releases in $FAKE_RELEASES, laid out as GitHub serves them:
+# releases/download/<tag>/<file> is <tag>/<file> there, and a 404 when it's missing, and releases/latest redirects to
+# the tag in the file latest. Each call goes on a line of $FAKE_CALLS.
+
+set -euo pipefail
+
+echo "curl $*" >> "$FAKE_CALLS"
+
+out='' format='' url=''
+while [ $# -gt 0 ]; do
+  case $1 in
+    -o) out=$2 && shift ;;
+    -w) format=$2 && shift ;;
+    --retry) shift ;;
+    -*) ;;
+    *) url=$1 ;;
+  esac
+  shift
+done
+
+repo=https://github.com/creasty/git-id
+case $url in
+  "$repo/releases/latest")
+    effective="$repo/releases/tag/$(cat "$FAKE_RELEASES/latest")"
+    ;;
+  "$repo/releases/download/"*)
+    file="$FAKE_RELEASES/${url#"$repo/releases/download/"}"
+    if [ ! -f "$file" ]; then
+      echo 'curl: (22) The requested URL returned error: 404' >&2
+      exit 22
+    fi
+    cp "$file" "$out"
+    effective=$url
+    ;;
+  *)
+    echo "curl: no fake for $url" >&2
+    exit 2
+    ;;
+esac
+printf '%s' "${format//'%{url_effective}'/$effective}"

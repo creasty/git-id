@@ -27,7 +27,7 @@ main() {
     *) fail "no release for $(uname -s); see https://github.com/$repo#install" ;;
   esac
   case "$(uname -m)" in
-    x86_64 | amd64) arch=amd64 ;;
+    x86_64) arch=amd64 ;;
     aarch64 | arm64) arch=arm64 ;;
     *) fail "no release for $(uname -m); see https://github.com/$repo#install" ;;
   esac
@@ -46,7 +46,7 @@ main() {
   else
     archive="git-id_${version}_${os}_${arch}.tar.gz"
     base="https://github.com/$repo/releases/download/$tag"
-    tmp=$(mktemp -d)
+    tmp=$(mktemp -d "${TMPDIR:-/tmp}/git-id.XXXXXX") # in TMPDIR, which macOS ignores for a bare mktemp -d
     staged="$bin_dir/.git-id.$$"
     trap 'rm -rf "$tmp" "$staged"' EXIT
 
@@ -55,7 +55,7 @@ main() {
     curl -fsSL --retry 3 -o "$tmp/checksums.txt" "$base/git-id_${version}_checksums.txt"
     (
       cd "$tmp"
-      grep "  $archive\$" checksums.txt > expected.txt
+      grep "  $archive\$" checksums.txt > expected.txt || fail "no checksum for $archive"
       if command -v sha256sum > /dev/null; then sha256sum -c expected.txt; else shasum -a 256 -c expected.txt; fi
     )
     tar -xzf "$tmp/$archive" -C "$tmp" git-id
