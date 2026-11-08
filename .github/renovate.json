@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate bumps what the repository pins, on Fridays, once a release is 3 days old, in a pull request per kind that CI tests. The window spans the whole day, as Mend's app queues a job every 4 hours but one can wait 8 hours or more to run: a narrower window misses them",
+  "extends": ["config:best-practices", ":automergePatch", ":automergeStableNonMajor"],
+  "timezone": "Asia/Tokyo",
+  "schedule": ["* * * * 5"],
+  "prHourlyLimit": 0,
+  "minimumReleaseAge": "3 days",
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "groupName": "Go modules"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "Only versions that build with the Go go.mod declares, the oldest one supported: an update that raised it would merge itself",
+      "matchManagers": ["gomod"],
+      "constraintsFiltering": "strict"
+    }
+  ]
+}
