@@ -35,6 +35,14 @@ With [Homebrew](https://brew.sh):
 brew install --cask creasty/tools/git-id
 ```
 
+With the install script, on macOS and Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/creasty/git-id/main/install.sh | sh
+```
+
+It installs the latest release in `~/.local/bin`, after checking it against the release's checksums; `sh -s -- 0.1.0` in place of `sh` installs that version instead. A version already installed is left as it is, so the script can run at the start of every agent session or CI job. There it makes sure `~/.local/bin` is on `PATH` for the later steps of a GitHub Actions job, through `$GITHUB_PATH`, and for the shell commands Claude runs later in a Claude Code session, through `$CLAUDE_ENV_FILE`.
+
 Or download the archive for your platform from [Releases](https://github.com/creasty/git-id/releases), or build with Go:
 
 ```sh
