@@ -1,0 +1,34 @@
+# Release builds, run by .github/workflows/release.yml when a v* tag is pushed.
+version: 2
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    # No version flag: Go stamps the tag being built into the binary, and `git id version` reads it.
+    ldflags:
+      - -s -w
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+homebrew_casks:
+  - repository:
+      owner: creasty
+      name: homebrew-tools
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: https://github.com/creasty/git-id
+    description: Stable, checksummed IDs for documents that refer to each other
+    # The binary is not signed or notarized, so macOS would refuse to run it from quarantine.
+    hooks:
+      post:
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/git-id"]
+          end

@@ -12,7 +12,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -25,7 +25,9 @@ jobs:
         with:
           go-version-file: go.mod
 
+      # Once is enough, and the Windows checkout turns line endings into CRLF
       - name: gofmt
+        if: runner.os == 'Linux'
         run: |
           unformatted=$(gofmt -l .)
           test -z "$unformatted" || { echo "$unformatted"; exit 1; }

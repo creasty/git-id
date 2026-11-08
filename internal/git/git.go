@@ -39,7 +39,7 @@ func FindRoot(dir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("not in a git working tree: %s", abs)
 	}
-	return strings.TrimSpace(string(out)), nil
+	return filepath.Clean(strings.TrimSpace(string(out))), nil
 }
 
 // command runs git in the working tree. GIT_OPTIONAL_LOCKS=0 keeps status from refreshing
@@ -74,7 +74,7 @@ func (r *Repo) Dirs() (gitDir, commonDir string, err error) {
 	if len(lines) != 2 {
 		return "", "", fmt.Errorf("git rev-parse: unexpected output %q", out)
 	}
-	return lines[0], lines[1], nil
+	return filepath.Clean(lines[0]), filepath.Clean(lines[1]), nil // git writes / on Windows too
 }
 
 // Entry is one changed or unmerged path in the status.
