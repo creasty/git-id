@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -198,6 +199,9 @@ func TestResolve(t *testing.T) {
 		assert.Len(t, f.ids("a.md"), 1)
 	})
 	t.Run("the file mode is kept", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Windows has no permission bits")
+		}
 		f := newFixture(t)
 		f.Write("a.md", "[R-"+fresh+"]\n")
 		require.NoError(t, os.Chmod(filepath.Join(f.Dir, "a.md"), 0o600))
@@ -442,10 +446,16 @@ func TestUsage(t *testing.T) {
 
 func TestHookCommand(t *testing.T) {
 	f := newFixture(t)
-	event := `{"hook_event_name":"PreToolUse","tool_name":"Write","session_id":"s","cwd":"` + f.Dir +
-		`","tool_input":{"file_path":"` + filepath.Join(f.Dir, "a.md") + `","content":"[R-` + agentNew + `]"}}`
+	event, err := json.Marshal(map[string]any{
+		"hook_event_name": "PreToolUse",
+		"tool_name":       "Write",
+		"session_id":      "s",
+		"cwd":             f.Dir,
+		"tool_input":      map[string]any{"file_path": filepath.Join(f.Dir, "a.md"), "content": "[R-" + agentNew + "]"},
+	})
+	require.NoError(t, err)
 	var out, errOut bytes.Buffer
-	code := Run([]string{"hook", "run", "claude"}, f.Dir, strings.NewReader(event), &out, &errOut)
+	code := Run([]string{"hook", "run", "claude"}, f.Dir, bytes.NewReader(event), &out, &errOut)
 	assert.Equal(t, 0, code, errOut.String())
 	assert.Contains(t, out.String(), "updatedInput")
 }

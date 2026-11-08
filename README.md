@@ -29,6 +29,14 @@ git id gives each item an ID written in the text itself. The ID survives renames
 
 ## Install
 
+With [Homebrew](https://brew.sh):
+
+```sh
+brew install --cask creasty/tools/git-id
+```
+
+Or download the archive for your platform from [Releases](https://github.com/creasty/git-id/releases), or build with Go:
+
 ```sh
 go install github.com/creasty/git-id@latest
 ```

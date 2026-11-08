@@ -3,6 +3,7 @@ package hook
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -128,9 +129,11 @@ func TestInstallKeepsTheRest(t *testing.T) {
 }
 `
 	assert.Equal(t, want, got, "only the new entry is added")
-	info, err := os.Stat(path)
-	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm(), "the file mode is kept")
+	if runtime.GOOS != "windows" { // Windows has no permission bits
+		info, err := os.Stat(path)
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o600), info.Mode().Perm(), "the file mode is kept")
+	}
 
 	again, changed := installed(t, root, "claude")
 	assert.False(t, changed, "installing twice adds nothing")
