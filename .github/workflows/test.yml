@@ -35,3 +35,23 @@ jobs:
       - run: go vet ./...
 
       - run: go test ./...
+
+  # Something for a branch rule to require. Each leg above reports under its own name, such as
+  # `test (windows-latest)`, which changes whenever the matrix does, and a required check that
+  # no longer reports is not enforced. This job has one stable name that covers every leg.
+  #
+  # `always()` matters: without it this job is skipped when a leg fails, and a skipped required
+  # check does not block a merge, so the gate would pass exactly when it should not. Running
+  # unconditionally and asserting the result means a failed, cancelled or skipped matrix all
+  # land as a failure here.
+  test-ok:
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      # For a matrix, `result` is success only when every leg succeeded.
+      - env:
+          RESULT: ${{ needs.test.result }}
+        run: |
+          echo "test: $RESULT"
+          [ "$RESULT" = 'success' ]
