@@ -15,6 +15,18 @@ An ID is a registered prefix, a separator and a random body ending in check char
 - Configurable: the prefixes, the length of an ID and of its check, how definitions and references are written, and which files count are all set in `.git-id.toml`. A wider format can be added as the project grows, and every existing ID stays valid.
 - Cached for large repositories: results are kept per tree and updated from `git diff-tree`, so after a commit only the changed files are read again.
 
+## Why now
+
+As coding agents take on more of the work, more of a project's knowledge lives in its repository, next to the code it describes. Requirements, decisions and specs are written in Markdown, reviewed in pull requests, and read and updated by agents along with the code.
+
+How those documents point at each other has no settled answer yet:
+
+- Links to file paths and headings break when a document is renamed or restructured.
+- Sequential numbers collide when two branches add items at once.
+- IDs from an issue tracker live outside the repository, so nothing in it can check them.
+
+git id gives each item an ID written in the text itself. The ID survives renames and restructuring, is unique among everything the repository holds, and is checked with nothing but git.
+
 ## Install
 
 ```sh
