@@ -102,12 +102,9 @@ jobs:
           [ "$RESULT" = 'success' ]
 
   # action.yml, used from this checkout, which gives it no ref: elsewhere it installs the version of the release tag
-  # it's pinned to
+  # it's pinned to. One runner is enough, as the install script's tests cover the platforms.
   action:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -127,16 +124,3 @@ jobs:
 
       # On PATH for the steps that follow
       - run: '[ "$(git id version)" = "git-id v0.1.0" ]'
-
-  # The action legs under one stable name, for a branch rule to require: see test-ok
-  action-ok:
-    if: always()
-    needs: action
-    runs-on: ubuntu-latest
-    steps:
-      # For a matrix, `result` is success only when every leg succeeded.
-      - env:
-          RESULT: ${{ needs.action.result }}
-        run: |
-          echo "action: $RESULT"
-          [ "$RESULT" = 'success' ]
