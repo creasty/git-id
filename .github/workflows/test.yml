@@ -55,3 +55,48 @@ jobs:
         run: |
           echo "test: $RESULT"
           [ "$RESULT" = 'success' ]
+
+  # install.sh against GitHub and against fakes (tests/install.bats), on the platforms it installs on, each with its
+  # own sh: dash on Ubuntu, bash 3.2 on macOS
+  install-script:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # bats with the libraries the tests load, which it finds in /usr/lib/bats
+      - name: Install bats
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends bats bats-support bats-assert
+
+      # bats with the libraries the tests load, from their tap
+      - name: Install bats
+        if: runner.os == 'macOS'
+        run: |
+          brew install bats-core bats-core/bats-core/bats-support bats-core/bats-core/bats-assert
+          echo "BATS_LIB_PATH=$(brew --prefix)/lib" >> "$GITHUB_ENV"
+
+      - run: bats --timing --print-output-on-failure tests
+
+  # The install-script legs under one stable name, for a branch rule to require: see test-ok
+  install-script-ok:
+    if: always()
+    needs: install-script
+    runs-on: ubuntu-latest
+    steps:
+      # For a matrix, `result` is success only when every leg succeeded.
+      - env:
+          RESULT: ${{ needs.install-script.result }}
+        run: |
+          echo "install-script: $RESULT"
+          [ "$RESULT" = 'success' ]
