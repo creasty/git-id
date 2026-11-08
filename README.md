@@ -43,6 +43,14 @@ curl -fsSL https://raw.githubusercontent.com/creasty/git-id/main/install.sh | sh
 
 It installs the latest release in `~/.local/bin`, after checking it against the release's checksums; `sh -s -- 0.1.0` in place of `sh` installs that version instead. A version already installed is left as it is, so the script can run at the start of every agent session or CI job. There it makes sure `~/.local/bin` is on `PATH` for the later steps of a GitHub Actions job, through `$GITHUB_PATH`, and for the shell commands Claude runs later in a Claude Code session, through `$CLAUDE_ENV_FILE`.
 
+In GitHub Actions, on Linux and macOS runners:
+
+```yaml
+- uses: creasty/git-id@v0.2.0
+```
+
+It runs the install script for the version of the release tag it is pinned to, so a bot that bumps the tag upgrades git id with it. Pinned another way, such as by a commit, it needs the version given: `with: { version: 0.2.0 }`.
+
 Or download the archive for your platform from [Releases](https://github.com/creasty/git-id/releases), or build with Go:
 
 ```sh

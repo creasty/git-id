@@ -1,0 +1,26 @@
+name: Set up git id
+description: Install git id, at the version of the release tag this action is pinned to, with install.sh
+inputs:
+  version:
+    description: >-
+      The version to install, such as 0.2.0, when the action is pinned by something other than a release tag, such as
+      a commit
+    required: false
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        # A composite action's steps see its ref only through env
+        REF: ${{ github.action_ref }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        version=${VERSION:-$REF}
+        case $version in
+          v[0-9]*.[0-9]* | [0-9]*.[0-9]*) ;;
+          *)
+            echo "::error::git id: creasty/git-id is pinned to '$REF', not a release tag; pin one, such as @v0.2.0, or set version"
+            exit 1
+            ;;
+        esac
+        sh "$GITHUB_ACTION_PATH/install.sh" "$version"
