@@ -100,3 +100,43 @@ jobs:
         run: |
           echo "install-script: $RESULT"
           [ "$RESULT" = 'success' ]
+
+  # action.yml, used from this checkout, which gives it no ref: elsewhere it installs the version of the release tag
+  # it's pinned to
+  action:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Without a release tag or a version, it refuses to pick one
+      - id: unpinned
+        uses: ./
+        continue-on-error: true
+      - if: steps.unpinned.outcome != 'failure'
+        run: exit 1
+
+      - uses: ./
+        with:
+          version: 0.1.0
+
+      # On PATH for the steps that follow
+      - run: '[ "$(git id version)" = "git-id v0.1.0" ]'
+
+  # The action legs under one stable name, for a branch rule to require: see test-ok
+  action-ok:
+    if: always()
+    needs: action
+    runs-on: ubuntu-latest
+    steps:
+      # For a matrix, `result` is success only when every leg succeeded.
+      - env:
+          RESULT: ${{ needs.action.result }}
+        run: |
+          echo "action: $RESULT"
+          [ "$RESULT" = 'success' ]
