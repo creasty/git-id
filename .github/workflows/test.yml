@@ -36,11 +36,10 @@ jobs:
 
       - run: go test ./...
 
-  # The oldest git the README promises: Debian bookworm's, which macOS Sequoia's Command Line Tools
-  # also ship. The runners above have newer ones.
+  # The oldest git the README promises: Ubuntu 22.04's. The runners above have newer ones.
   test-oldest-git:
     runs-on: ubuntu-latest
-    container: debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
+    container: ubuntu:22.04@sha256:076e7bf82319619f28dd0aa9c02ab34b055ad37100395b4f49a2ffba04fb5e11
     timeout-minutes: 10
     steps:
       - run: apt-get update && apt-get install -y --no-install-recommends ca-certificates git
