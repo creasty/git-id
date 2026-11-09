@@ -29,6 +29,8 @@ git id gives each item an ID written in the text itself. The ID survives renames
 
 ## Install
 
+git id needs git 2.34 or newer.
+
 With [Homebrew](https://brew.sh):
 
 ```sh
