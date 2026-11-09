@@ -17,7 +17,8 @@ import (
 
 // Repo is a working tree.
 type Repo struct {
-	Root string // absolute path of the working tree's top directory
+	Root string   // absolute path of the working tree's top directory
+	env  []string // set for every command, over the inherited environment
 }
 
 // FindRoot returns the top of the working tree containing dir. It walks up to the nearest
@@ -46,7 +47,7 @@ func FindRoot(dir string) (string, error) {
 // the index, so concurrent hooks and editors never fight over index.lock.
 func (r *Repo) command(args ...string) *exec.Cmd {
 	cmd := exec.Command("git", append([]string{"-C", r.Root}, args...)...)
-	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
+	cmd.Env = append(append(os.Environ(), "GIT_OPTIONAL_LOCKS=0"), r.env...)
 	return cmd
 }
 
@@ -286,11 +287,48 @@ func readBatch(br *bufio.Reader, fn func(oid string, data []byte) error) error {
 	}
 }
 
-// DiffAttrs returns the diff attribute of each path, which decides whether git treats a file
-// as binary: "unset" (also set by the binary macro), "set", a driver name, or "unspecified".
-// from selects where attributes are read: nil for the working tree, "--cached" for the index,
-// "--source=<tree>" for a tree.
-func (r *Repo) DiffAttrs(paths []string, from ...string) (map[string]string, error) {
+// DiffAttrs returns the diff attribute of each path by the working tree's .gitattributes
+// files. It decides whether git treats a file as binary: "unset" (also set by the binary
+// macro), "set", a driver name, or "unspecified".
+func (r *Repo) DiffAttrs(paths []string) (map[string]string, error) {
+	return r.checkAttr(paths)
+}
+
+// IndexDiffAttrs is DiffAttrs by the index's .gitattributes files.
+func (r *Repo) IndexDiffAttrs(paths []string) (map[string]string, error) {
+	return r.checkAttr(paths, "--cached")
+}
+
+// TreeDiffAttrs is DiffAttrs by a tree's .gitattributes files. git check-attr reads a tree
+// only from git 2.40 (--source), and slowly when paths come out of order, so they are put in
+// a throwaway index, read as the index.
+func (r *Repo) TreeDiffAttrs(paths []string, tree string) (map[string]string, error) {
+	if len(paths) == 0 {
+		return map[string]string{}, nil
+	}
+	blobs, err := r.LsTree(tree)
+	if err != nil {
+		return nil, err
+	}
+	var entries strings.Builder
+	for _, b := range blobs {
+		if b.Path == ".gitattributes" || strings.HasSuffix(b.Path, "/.gitattributes") {
+			fmt.Fprintf(&entries, "100644 %s\t%s\x00", b.OID, b.Path)
+		}
+	}
+	dir, err := os.MkdirTemp("", "git-id-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dir)
+	index := &Repo{Root: r.Root, env: []string{"GIT_INDEX_FILE=" + filepath.Join(dir, "index")}}
+	if _, err := index.run([]byte(entries.String()), "update-index", "-z", "--index-info"); err != nil {
+		return nil, err
+	}
+	return index.IndexDiffAttrs(paths)
+}
+
+func (r *Repo) checkAttr(paths []string, from ...string) (map[string]string, error) {
 	attrs := make(map[string]string, len(paths))
 	if len(paths) == 0 {
 		return attrs, nil

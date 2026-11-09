@@ -163,7 +163,9 @@ func (c *Corpus) headLayer(commit string) (map[string]headFile, error) {
 			}
 		}
 	}
-	if err := c.scanBlobs(toRead, []string{"--source=" + tree}, func(oid, p string, occs []ids.Occurrence) {
+	if err := c.scanBlobs(toRead, func(paths []string) (map[string]string, error) {
+		return c.repo.TreeDiffAttrs(paths, tree)
+	}, func(oid, p string, occs []ids.Occurrence) {
 		if len(occs) > 0 {
 			files[p] = headFile{Blob: oid, Occurrences: occs}
 		}
@@ -216,7 +218,7 @@ func (c *Corpus) historyBodies() (map[string]struct{}, error) {
 			toRead[b.OID] = []string{b.Path}
 		}
 	}
-	if err := c.scanBlobs(toRead, nil, func(_, _ string, occs []ids.Occurrence) {
+	if err := c.scanBlobs(toRead, c.repo.DiffAttrs, func(_, _ string, occs []ids.Occurrence) {
 		for _, o := range occs {
 			if o.Body != "" {
 				bodies[o.Body] = struct{}{}

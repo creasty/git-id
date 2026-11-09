@@ -108,7 +108,7 @@ func (c *Corpus) Taken() (map[string]struct{}, error) {
 			staged[e.IndexBlob] = append(staged[e.IndexBlob], e.Path)
 		}
 	}
-	if err := c.scanBlobs(staged, []string{"--cached"}, func(_, _ string, occs []ids.Occurrence) {
+	if err := c.scanBlobs(staged, c.repo.IndexDiffAttrs, func(_, _ string, occs []ids.Occurrence) {
 		add(occs)
 	}); err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (c *Corpus) Worktree() ([]ids.File, error) {
 			fromIndex[e.IndexBlob] = append(fromIndex[e.IndexBlob], e.Path)
 		}
 	}
-	if err := c.scanBlobs(fromIndex, []string{"--cached"}, func(_, path string, occs []ids.Occurrence) {
+	if err := c.scanBlobs(fromIndex, c.repo.IndexDiffAttrs, func(_, path string, occs []ids.Occurrence) {
 		view[path] = occs
 	}); err != nil {
 		return nil, err
@@ -185,14 +185,14 @@ func (c *Corpus) Worktree() ([]ids.File, error) {
 }
 
 // scanBlobs reads blobs from the object database and calls fn for each path of each one
-// that git treats as text there. from says where the attributes come from (see
-// git.Repo.DiffAttrs). A blob is scanned once however many paths share it.
-func (c *Corpus) scanBlobs(paths map[string][]string, from []string, fn func(oid, path string, occs []ids.Occurrence)) error {
+// that git treats as text there. diffAttrs reads the attributes from where the blobs are
+// (see git.Repo.DiffAttrs). A blob is scanned once however many paths share it.
+func (c *Corpus) scanBlobs(paths map[string][]string, diffAttrs func([]string) (map[string]string, error), fn func(oid, path string, occs []ids.Occurrence)) error {
 	var all []string
 	for _, ps := range paths {
 		all = append(all, ps...)
 	}
-	attrs, err := c.repo.DiffAttrs(all, from...)
+	attrs, err := diffAttrs(all)
 	if err != nil {
 		return err
 	}

@@ -237,6 +237,18 @@ func TestBinaryFiles(t *testing.T) {
 		f.Commit(".gitattributes")
 		assert.Equal(t, f.bodies(id), f.taken(t), "a.md did not change, but it is text now")
 	})
+	t.Run("HEAD follows its own attributes, not staged ones", func(t *testing.T) {
+		f := newFixture(t, configText)
+		f.Write(".gitattributes", "a.md binary\n")
+		f.Write("sub/.gitattributes", "b.md binary\n")
+		f.Write("a.md", "["+f.id(t, "R")+"]\n")
+		f.Write("sub/b.md", "["+f.id(t, "R")+"]\n")
+		f.Commit(".gitattributes", "sub/.gitattributes", "a.md", "sub/b.md")
+		f.Write(".gitattributes", "")
+		f.Write("sub/.gitattributes", "")
+		f.Add(".gitattributes", "sub/.gitattributes")
+		assert.Empty(t, f.taken(t), "a.md and sub/b.md are binary in HEAD and unchanged since")
+	})
 	t.Run("a change to info/attributes rereads too", func(t *testing.T) {
 		f := newFixture(t, configText)
 		id := f.id(t, "R")
